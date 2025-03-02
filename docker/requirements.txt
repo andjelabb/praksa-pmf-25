@@ -1,0 +1,11 @@
+kafka-python-ng==2.2.3
+minio==7.2.15
+numpy==2.2.3
+pandas==2.2.2
+psycopg2_binary==2.9.9
+python-dotenv==1.0.1
+risingwave-py==0.0.1
+scikit-learn==1.6.1
+lightgbm==4.6.0
+ipykernel==6.29.5
+seaborn==0.13.2
