@@ -1,0 +1,16 @@
+import os
+
+import dotenv
+
+dotenv.load_dotenv()
+
+
+# MinIO:
+MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
+MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
+MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
+MINIO_TRAIN_DATA_BUCKET = os.getenv("MINIO_TRAIN_DATA_BUCKET")
+MINIO_TRAINED_MODEL_BUCKET = os.getenv("MINIO_TRAINED_MODEL_BUCKET")
+MINIO_CACHE_BUCKET = os.getenv("MINIO_CACHE_BUCKET")
+
+
