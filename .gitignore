@@ -1,0 +1,4 @@
+.venv
+main/configs/__pycache__/
+main/__pycache__/
+main/utils/minio_utils/__pycache__/

@@ -29,8 +29,118 @@ services:
     command: server /data --console-address ":9001"
 
  
+
+
+
+  redpanda-0:
+    command:
+      - redpanda
+      - start
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda-0:9092,external://localhost:19092
+      - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr internal://redpanda-0:8082,external://localhost:18082
+      - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+      - --rpc-addr redpanda-0:33145
+      - --advertise-rpc-addr redpanda-0:33145
+      - --smp 1
+      - --default-log-level=info
+    image: docker.redpanda.com/redpandadata/redpanda:v24.3.6
+    container_name: redpanda-0
+    volumes:
+      - redpanda-0:/var/lib/redpanda/data
+    ports:
+      - 18081:18081
+      - 18082:18082
+      - 19092:19092
+      - 19644:9644  
+
+  console:
+    container_name: redpanda-console
+    image: docker.redpanda.com/redpandadata/console:v2.8.3
+    entrypoint: /bin/sh
+    command: -c 'echo "$$CONSOLE_CONFIG_FILE" > /tmp/config.yml; /app/console'
+    environment:
+      CONFIG_FILEPATH: /tmp/config.yml
+      CONSOLE_CONFIG_FILE: |
+        kafka:
+          brokers: ["redpanda-0:9092"]
+          schemaRegistry:
+            enabled: true
+            urls: ["http://redpanda-0:8081"]
+        redpanda:
+          adminApi:
+            enabled: true
+            urls: ["http://redpanda-0:9644"]
+    ports:
+      - 8080:8080
+    depends_on:
+      - redpanda-0
+
+  risingwave-standalone-0:
+    image: risingwavelabs/risingwave:v2.2.0
+    container_name: risingwave-standalone-0
+    command:
+      standalone
+      --meta-opts "
+        --listen-addr 0.0.0.0:5690
+        --dashboard-host 0.0.0.0:5691
+        --advertise-addr 0.0.0.0:5690
+        --backend sql
+        --sql-endpoint postgres://postgres:@postgres-0:5432/metadata
+        --state-store hummock+fs:///data/state
+        --data-directory hummock_001
+        --config-path /risingwave.toml"
+      --compute-opts "
+        --config-path /risingwave.toml
+        --listen-addr 0.0.0.0:5688
+        --advertise-addr 0.0.0.0:5688
+        --async-stack-trace verbose
+        --role both
+        --meta-address http://0.0.0.0:5690"
+      --frontend-opts "
+        --config-path /risingwave.toml
+        --listen-addr 0.0.0.0:4566
+        --advertise-addr 0.0.0.0:4566
+        --meta-addr http://0.0.0.0:5690"
+      --compactor-opts "
+        --listen-addr 0.0.0.0:6660
+        --advertise-addr 0.0.0.0:6660
+        --meta-address http://0.0.0.0:5690"
+    expose:
+      - "6660"
+      - "4566"
+      - "5688"
+      - "5690"
+      - "5691"
+    ports:
+      - "4566:4566"
+      - "5690:5690"
+      - "5691:5691"
+    volumes:
+      - "./risingwave.toml:/risingwave.toml"
+      - "statestore-0:/data/state"
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 28G
+        reservations:
+          memory: 28G
+    depends_on:
+      - postgres-0
+      - minio-0
+      - redpanda-0
+   
+
 volumes:
   postgres-0:
     external: false
   minio-0:
+    external: false
+  redpanda-0:
+    external: false
+  console:
+    external: false
+  statestore-0:
     external: false
